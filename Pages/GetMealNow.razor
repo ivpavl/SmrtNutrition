@@ -1,32 +1,108 @@
 @page "/mealnow"
+@using SmrtNutrition.Data
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
+@inject IConfiguration Configuration
 
 <PageTitle>Get daily meal</PageTitle>
 
-<h1>Sample text</h1>
+    <h1>Sample text</h1>
+    @ErrorMessage
+@if (FirstStage)
+{
+    <div style="display: flex;">
+        <div class="form-group" style="width: max-content;">
+            <label for="@nameof(desiredCalories)">Amout of desired calories?</label>
+            <input id="@nameof(desiredCalories)" @bind="desiredCalories" class="form-control" />
+            <label for="@nameof(maxTimeToCook)">Max minutes time to cook?</label>
+            <input id="@nameof(maxTimeToCook)" @bind="maxTimeToCook" class="form-control" />
+            @foreach (var item in dishTypes)
+            {
+                <div>
+                    <input type="checkbox" value="@item.Key" @onchange="@(e => HandleCheckboxChange(e, item.Key))" />
+                    <label>@item.Key</label>
+                </div>
+                
+            }
+        </div>
+        <div style="margin-left: 25px;">
+            @foreach (var item in desiredNutrients)
+            {
+                <label for="@nameof(item.Key)">@item.Key?</label>
+                <input id="@nameof(item.Value)" @bind="desiredNutrients[item.Key]" class="form-control" />
+                
+            }
+        </div>
+    </div>
+    <input type="submit" @onclick=getDishes>
+}
+else
+{
+    foreach (MealModel meal in mealList)
+    {
+        <h1>@meal.MealName</h1>
+    }
+}
 
 
 @code 
 {
-   @* private HttpClient _httpClient;
-    public string timeNow;
+    private HttpClient _httpClient = null!;
+
+    public bool FirstStage = true;
+    public Dictionary<string, int> desiredNutrients = new Dictionary<string, int>()
+        {
+            {"Proteins", 50},
+            {"Fats", 50},
+            {"Carbohydrates", 50},
+        };
+
+    public Dictionary<string, bool> dishTypes = new Dictionary<string, bool>() 
+        {
+            {"Ketogenic", false},
+            {"Vegetarian", false},
+            {"Primal", false},
+            {"Lacto-Vegetarian", false}
+        };
+    public int desiredCalories = 2500;
+    public int maxTimeToCook = 40;
+
+    public List<MealModel> mealList = null!;
+    public string ErrorMessage = "";
     protected override async Task OnInitializedAsync()
     {
-
         _httpClient = ClientFactory.CreateClient("LocalApi");
-        // Send the request
-        var dataRequest = await _httpClient.GetAsync($"api/time");
+    }
+    private void HandleCheckboxChange(ChangeEventArgs e, string value)
+    {
+        if ((bool)e.Value! == true)
+            dishTypes[value] = true;
+        else
+            dishTypes[value] = false;
+    }
+    public async Task getDishes()
+    {
+        var model = new MealInfoModel(){
+            DesiredCalories = desiredCalories, 
+            MaxTimeToCook = maxTimeToCook,
+            DesiredNutrients = desiredNutrients, 
+            DishTypes = dishTypes,
+            };
+
+        var dataRequest = await _httpClient.PostAsJsonAsync("api/food/MealSearch", model);
+        string strJson = JsonSerializer.Serialize<MealInfoModel>(model);
         if (dataRequest.IsSuccessStatusCode)
         {
-            var jsonString = System.Text.Json.JsonDocument.Parse(await dataRequest.Content.ReadAsStreamAsync());
-            Console.WriteLine(jsonString);
-            var str = JsonSerializer.Deserialize<TimeResponse>(jsonString);
-            timeNow = str.time;
-            Console.WriteLine(timeNow);
-            
+            using var responseStream = await dataRequest.Content.ReadAsStreamAsync();
+            var data = await JsonSerializer.DeserializeAsync<Dictionary<string, List<MealModel>>>(responseStream);
+            FirstStage = false;
+            mealList = data?.First().Value!;
+            if (mealList is null)
+            {
+                FirstStage = true;
+                ErrorMessage = "Meal list is null!";
+            }
         }
     }
-    public class TimeResponse
-    {
-        public string time { get; set; }
-    } *@
 }
