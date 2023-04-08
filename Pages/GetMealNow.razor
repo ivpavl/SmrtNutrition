@@ -1,0 +1,32 @@
+@page "/mealnow"
+
+<PageTitle>Get daily meal</PageTitle>
+
+<h1>Sample text</h1>
+
+
+@code 
+{
+   @* private HttpClient _httpClient;
+    public string timeNow;
+    protected override async Task OnInitializedAsync()
+    {
+
+        _httpClient = ClientFactory.CreateClient("LocalApi");
+        // Send the request
+        var dataRequest = await _httpClient.GetAsync($"api/time");
+        if (dataRequest.IsSuccessStatusCode)
+        {
+            var jsonString = System.Text.Json.JsonDocument.Parse(await dataRequest.Content.ReadAsStreamAsync());
+            Console.WriteLine(jsonString);
+            var str = JsonSerializer.Deserialize<TimeResponse>(jsonString);
+            timeNow = str.time;
+            Console.WriteLine(timeNow);
+            
+        }
+    }
+    public class TimeResponse
+    {
+        public string time { get; set; }
+    } *@
+}
