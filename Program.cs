@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using SmrtNutrition.Data;
+using Swashbuckle.AspNetCore.Annotations;
+using Swashbuckle.AspNetCore.SwaggerUI;
+using Swashbuckle.AspNetCore.Swagger;
 // using Microsoft.OpenApi;
 // using Microsoft.OpenApi.Models;
 
@@ -18,7 +21,10 @@ builder.Services.AddSingleton<WeatherForecastService>();
 //Services for Swagger
 builder.Services.AddMvcCore();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+   c.EnableAnnotations();
+});
 
 // TODO: Improve
 // TODO: Improve
@@ -38,6 +44,7 @@ app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
     options.SwaggerEndpoint("v1/swagger.json", "MyAPI V1");
+    options.DocExpansion(DocExpansion.None);
 });
 
 app.UseHttpsRedirection();

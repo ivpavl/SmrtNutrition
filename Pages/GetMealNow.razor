@@ -3,19 +3,15 @@
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @inject IHttpClientFactory ClientFactory
-@inject IConfiguration Configuration
 
 <PageTitle>Get daily meal</PageTitle>
 
-    <h1>Sample text</h1>
     @ErrorMessage
 @if (FirstStage)
 {
     <div style="display: flex;">
         <div class="form-group" style="width: max-content;">
-            <label for="@nameof(desiredCalories)">Amout of desired calories?</label>
-            <input id="@nameof(desiredCalories)" @bind="desiredCalories" class="form-control" />
-            <label for="@nameof(maxTimeToCook)">Max minutes time to cook?</label>
+            <label for="@nameof(maxTimeToCook)">Maximum cooking time in minutes?</label>
             <input id="@nameof(maxTimeToCook)" @bind="maxTimeToCook" class="form-control" />
             @foreach (var item in dishTypes)
             {
@@ -29,7 +25,7 @@
         <div style="margin-left: 25px;">
             @foreach (var item in desiredNutrients)
             {
-                <label for="@nameof(item.Key)">@item.Key?</label>
+                <label for="@nameof(item.Key)">Your daily @item.Key?</label>
                 <input id="@nameof(item.Value)" @bind="desiredNutrients[item.Key]" class="form-control" />
                 
             }
@@ -39,10 +35,25 @@
 }
 else
 {
-    foreach (MealModel meal in mealList)
-    {
-        <h1>@meal.MealName</h1>
-    }
+    <div style="display: flex; justify-content: space-between;">
+        @foreach (MealModel meal in mealList)
+        {
+            <div style="max-width: 312px;">
+                <h4 >@meal.Title</h4>
+                <img src="@meal.ImageUrl">
+                <p>@foreach (string line in meal.Recipy)
+                {
+                    @line<br>
+                }</p><br>
+                @foreach (var item in meal.Nutrition)
+                {
+                    <p>
+                        @item.Key @item.Value <br>
+                    </p>
+                }
+            </div>
+        }
+    </div>
 }
 
 
@@ -53,9 +64,10 @@ else
     public bool FirstStage = true;
     public Dictionary<string, int> desiredNutrients = new Dictionary<string, int>()
         {
-            {"Proteins", 50},
-            {"Fats", 50},
-            {"Carbohydrates", 50},
+            {"Calories", 2500},
+            {"Protein", 210},
+            {"Fat", 60},
+            {"Carbohydrates", 300},
         };
 
     public Dictionary<string, bool> dishTypes = new Dictionary<string, bool>() 
@@ -65,8 +77,7 @@ else
             {"Primal", false},
             {"Lacto-Vegetarian", false}
         };
-    public int desiredCalories = 2500;
-    public int maxTimeToCook = 40;
+    public int maxTimeToCook = 60;
 
     public List<MealModel> mealList = null!;
     public string ErrorMessage = "";
@@ -83,21 +94,18 @@ else
     }
     public async Task getDishes()
     {
-        var model = new MealInfoModel(){
-            DesiredCalories = desiredCalories, 
+        var model = new MealInfoModel(){ // Divide on 3, because we print only for one meal(there are 3 meals per day)
             MaxTimeToCook = maxTimeToCook,
-            DesiredNutrients = desiredNutrients, 
+            DesiredNutrients = desiredNutrients.ToDictionary(kv => kv.Key, kv => kv.Value / 3),
             DishTypes = dishTypes,
             };
 
         var dataRequest = await _httpClient.PostAsJsonAsync("api/food/MealSearch", model);
-        string strJson = JsonSerializer.Serialize<MealInfoModel>(model);
         if (dataRequest.IsSuccessStatusCode)
         {
             using var responseStream = await dataRequest.Content.ReadAsStreamAsync();
-            var data = await JsonSerializer.DeserializeAsync<Dictionary<string, List<MealModel>>>(responseStream);
+            mealList = await JsonSerializer.DeserializeAsync<List<MealModel>>(responseStream)!;
             FirstStage = false;
-            mealList = data?.First().Value!;
             if (mealList is null)
             {
                 FirstStage = true;
