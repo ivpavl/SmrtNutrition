@@ -1,32 +1,116 @@
 @page "/mealnow"
+@using SmrtNutrition.Data
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
 
 <PageTitle>Get daily meal</PageTitle>
 
-<h1>Sample text</h1>
+    @ErrorMessage
+@if (FirstStage)
+{
+    <div style="display: flex;">
+        <div class="form-group" style="width: max-content;">
+            <label for="@nameof(maxTimeToCook)">Maximum cooking time in minutes?</label>
+            <input id="@nameof(maxTimeToCook)" @bind="maxTimeToCook" class="form-control" />
+            @foreach (var item in dishTypes)
+            {
+                <div>
+                    <input type="checkbox" value="@item.Key" @onchange="@(e => HandleCheckboxChange(e, item.Key))" />
+                    <label>@item.Key</label>
+                </div>
+                
+            }
+        </div>
+        <div style="margin-left: 25px;">
+            @foreach (var item in desiredNutrients)
+            {
+                <label for="@nameof(item.Key)">Your daily @item.Key?</label>
+                <input id="@nameof(item.Value)" @bind="desiredNutrients[item.Key]" class="form-control" />
+                
+            }
+        </div>
+    </div>
+    <input type="submit" @onclick=getDishes>
+}
+else
+{
+    <div style="display: flex; justify-content: space-between;">
+        @foreach (MealModel meal in mealList)
+        {
+            <div style="max-width: 312px;">
+                <h4 >@meal.Title</h4>
+                <img src="@meal.ImageUrl">
+                <p>@foreach (string line in meal.Recipy)
+                {
+                    @line<br>
+                }</p><br>
+                @foreach (var item in meal.Nutrition)
+                {
+                    <p>
+                        @item.Key @item.Value <br>
+                    </p>
+                }
+            </div>
+        }
+    </div>
+}
 
 
 @code 
 {
-   @* private HttpClient _httpClient;
-    public string timeNow;
+    private HttpClient _httpClient = null!;
+
+    public bool FirstStage = true;
+    public Dictionary<string, int> desiredNutrients = new Dictionary<string, int>()
+        {
+            {"Calories", 2500},
+            {"Protein", 210},
+            {"Fat", 60},
+            {"Carbohydrates", 300},
+        };
+
+    public Dictionary<string, bool> dishTypes = new Dictionary<string, bool>() 
+        {
+            {"Ketogenic", false},
+            {"Vegetarian", false},
+            {"Primal", false},
+            {"Lacto-Vegetarian", false}
+        };
+    public int maxTimeToCook = 60;
+
+    public List<MealModel> mealList = null!;
+    public string ErrorMessage = "";
     protected override async Task OnInitializedAsync()
     {
-
         _httpClient = ClientFactory.CreateClient("LocalApi");
-        // Send the request
-        var dataRequest = await _httpClient.GetAsync($"api/time");
+    }
+    private void HandleCheckboxChange(ChangeEventArgs e, string value)
+    {
+        if ((bool)e.Value! == true)
+            dishTypes[value] = true;
+        else
+            dishTypes[value] = false;
+    }
+    public async Task getDishes()
+    {
+        var model = new MealInfoModel(){ // Divide on 3, because we print only for one meal(there are 3 meals per day)
+            MaxTimeToCook = maxTimeToCook,
+            DesiredNutrients = desiredNutrients.ToDictionary(kv => kv.Key, kv => kv.Value / 3),
+            DishTypes = dishTypes,
+            };
+
+        var dataRequest = await _httpClient.PostAsJsonAsync("api/food/MealSearch", model);
         if (dataRequest.IsSuccessStatusCode)
         {
-            var jsonString = System.Text.Json.JsonDocument.Parse(await dataRequest.Content.ReadAsStreamAsync());
-            Console.WriteLine(jsonString);
-            var str = JsonSerializer.Deserialize<TimeResponse>(jsonString);
-            timeNow = str.time;
-            Console.WriteLine(timeNow);
-            
+            using var responseStream = await dataRequest.Content.ReadAsStreamAsync();
+            mealList = await JsonSerializer.DeserializeAsync<List<MealModel>>(responseStream)!;
+            FirstStage = false;
+            if (mealList is null)
+            {
+                FirstStage = true;
+                ErrorMessage = "Meal list is null!";
+            }
         }
     }
-    public class TimeResponse
-    {
-        public string time { get; set; }
-    } *@
 }
