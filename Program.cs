@@ -26,9 +26,6 @@ builder.Services.AddSwaggerGen(c =>
    c.EnableAnnotations();
 });
 
-// TODO: Improve
-// TODO: Improve
-// TODO: Improve
 builder.Services.AddHttpClient("LocalApi", client => client.BaseAddress = new Uri("http://localhost:5233/")); 
 
 var app = builder.Build();

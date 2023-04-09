@@ -5,14 +5,19 @@ namespace SmrtNutrition.Shared
 {
     public static class SharedUtils
     {
+        //Complex Search - API name in spoonacular.com
+        //Complex Search Json -> List<MealModel>
         public static List<MealModel> CompSearToMealList(JObject json)
         {
-            var list = new List<MealModel>();
+            var MealList = new List<MealModel>();
             JToken results = json.GetValue("results");
             foreach(JToken dish in results)
             {
                 int id = (int)dish.SelectToken("id")!;
-                var nutrients = dish["nutrition"]["nutrients"].Where(s => Enum.IsDefined(typeof(NutrientsNames), (string)s["name"])).ToList();
+                var nutrients = dish["nutrition"]["nutrients"]
+                .Where(s => Enum.IsDefined(typeof(NutrientsNames), (string)s["name"]))
+                .ToList();
+
                 var recipeSteps = dish["analyzedInstructions"][0]["steps"];
 
 
@@ -25,7 +30,7 @@ namespace SmrtNutrition.Shared
                     .ToList()!;
 
 
-                list.Add(new MealModel()
+                MealList.Add(new MealModel()
                 {
                     Id = id,
                     ImageUrl = (string)dish.SelectToken("image")!,
@@ -36,7 +41,7 @@ namespace SmrtNutrition.Shared
 
 
             }
-            return list;
+            return MealList;
         }
 
 

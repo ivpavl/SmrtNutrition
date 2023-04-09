@@ -10,6 +10,7 @@
 @if (FirstStage)
 {
     <div style="display: flex;">
+        
         <div class="form-group" style="width: max-content;">
             <label for="@nameof(maxTimeToCook)">Maximum cooking time in minutes?</label>
             <input id="@nameof(maxTimeToCook)" @bind="maxTimeToCook" class="form-control" />
@@ -22,6 +23,7 @@
                 
             }
         </div>
+
         <div style="margin-left: 25px;">
             @foreach (var item in desiredNutrients)
             {
@@ -30,6 +32,7 @@
                 
             }
         </div>
+
     </div>
     <input type="submit" @onclick=getDishes>
 }

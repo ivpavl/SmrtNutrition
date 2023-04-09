@@ -19,7 +19,7 @@ namespace SmrtNutrition.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> GetRecipies([FromBody] MealInfoModel? infoModel)
+        public async Task<IActionResult> GetDishes([FromBody] MealInfoModel? infoModel)
         {
             string apiSearch = $"https://api.spoonacular.com/recipes/complexSearch?apiKey={_configuration["ApiKey"]}";
             var dishType = new List<string>(){"main course", "side dish", "dessert"};
